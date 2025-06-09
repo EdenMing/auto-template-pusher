@@ -5,17 +5,17 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# ─── CONFIG ───────────────────────────────────────────────────
+# ─── CONFIG ──────────────────────────────────────────────────────────────────
 LOGIN_URL     = "http://54.184.236.96/accounts/login/"
 PUSH_ADD_URL  = "http://54.184.236.96/job/push_template_add"
 PUSH_LIST_URL = "http://54.184.236.96/job/push_template"
+CDN_OLD       = "s3://dragon-business-res"
+CDN_NEW       = "https://d1i7uj8b98if3u.cloudfront.net"
 
-CDN_OLD = "s3://dragon-business-res"
-CDN_NEW = "https://d1i7uj8b98if3u.cloudfront.net"
-
-# ─── CREDENTIAL INPUT ──────────────────────────────────────────
+# ─── CREDENTIAL INPUT ─────────────────────────────────────────────────────────
 default_user = st.secrets["credentials"].get("username", "")
 default_pass = st.secrets["credentials"].get("password", "")
 
@@ -23,7 +23,7 @@ st.title("Auto-Template Pusher")
 username = st.text_input("Username", value=default_user)
 password = st.text_input("Password", type="password", value=default_pass)
 
-# ─── FILE UPLOADER ─────────────────────────────────────────────
+# ─── FILE UPLOADER ─────────────────────────────────────────────────────────────
 uploaded = st.file_uploader("Upload your template-details Excel", type="xlsx")
 if not uploaded:
     st.stop()
@@ -31,11 +31,16 @@ if not uploaded:
 df = pd.read_excel(uploaded, dtype=str)
 st.write("Detected columns:", df.columns.tolist())
 
-# ─── BUTTON TO PUSH ────────────────────────────────────────────
+# ─── PUSH BUTTON ───────────────────────────────────────────────────────────────
 if st.button("Push All Templates"):
-    driver = webdriver.Chrome(ChromeDriverManager().install(),
-                              options=webdriver.ChromeOptions().add_argument("--headless=new"))
-    wait = WebDriverWait(driver, 10)
+    # ── prepare headless Chrome ───────────────────────────────────────────────
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    service = Service(ChromeDriverManager().install())
+    driver  = webdriver.Chrome(service=service, options=options)
+    wait    = WebDriverWait(driver, 10)
 
     # 1) Login
     driver.get(LOGIN_URL)
@@ -43,9 +48,10 @@ if st.button("Push All Templates"):
     driver.find_element(By.ID, "id_password").send_keys(password)
     driver.find_element(By.XPATH, "//button[@type='submit']").click()
 
-    payload_records, id_records = [], []
+    payload_records = []
+    id_records      = []
 
-    # 2) Iterate rows
+    # 2) Iterate over each row
     for _, row in df.iterrows():
         name   = row["Template Name"]
         title  = row["Title"]
@@ -58,7 +64,7 @@ if st.button("Push All Templates"):
             if col in row and pd.notna(row[col]):
                 extras[col] = row[col].replace(CDN_OLD, CDN_NEW)
 
-        # a) Add template
+        # a) Add a new template
         driver.get(PUSH_ADD_URL)
         wait.until(EC.presence_of_element_located((By.ID, "name"))).send_keys(name)
         driver.find_element(By.ID, "title").send_keys(title)
@@ -73,7 +79,7 @@ if st.button("Push All Templates"):
 
         driver.find_element(By.XPATH, "//button[@type='submit']").click()
 
-        # b) Fetch ID
+        # b) Retrieve the new template’s ID
         driver.get(PUSH_LIST_URL)
         header = wait.until(EC.presence_of_element_located(
             (By.XPATH, f"//div[@class='card-header' and contains(., '{name}')]")
@@ -81,9 +87,14 @@ if st.button("Push All Templates"):
         tid = header.text.split(":")[0].strip()
         id_records.append({"Template Name": name, "Template ID": tid})
 
-        # c) Build payload JSON
-        payload = {**extras, "title": title, "body": body,
-                   "bigImage": imgurl, "sound": extras.get("track", "")}
+        # c) Build the JSON payload record
+        payload = {
+            **extras,
+            "title": title,
+            "body": body,
+            "bigImage": imgurl,
+            "sound": extras.get("track", "")
+        }
         payload_records.append({
             "Template Name": name,
             "Payload JSON": json.dumps(payload, ensure_ascii=False)
@@ -91,7 +102,7 @@ if st.button("Push All Templates"):
 
     driver.quit()
 
-    # 3) Download buttons
+    # 3) Offer downloads
     df_payload = pd.DataFrame(payload_records)
     df_ids     = pd.DataFrame(id_records)
 
