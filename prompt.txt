@@ -1,0 +1,85 @@
+we are doing another app to deploy it on stream lit, this is an auto template app, users will upload an excel with the template details
+so we are doing this with python
+first log into the site, the site can only be accessed via inner network,
+<input type="text" name="username" autofocus="" autocapitalize="none" autocomplete="username" maxlength="150" required="" id="id_username" data-listener-added_c971a536="true">
+this is for input the user name
+<input type="password" name="password" autocomplete="current-password" required="" id="id_password">
+this is for input the password
+
+heres mine un and pw, EdenMing   FrancISCO22
+after we will create a secret in streamlit, to put my coworkers username and password in, so that after they get the app, can log in with their own credentials
+<a href="/job/push_template_add" class="nav-link text-white active" aria-current="page">
+                    <svg class="bi pe-none me-2" width="16" height="16">
+                        
+                    </svg>
+                    推送模板-新增
+                </a>
+this is what we click to add in new templates
+
+i will include the excel format first
+Template Name	Title	Message	Image URL	Launch URL	bg1	bg2	track	onlybg
+these are the columns for the input excel
+the first 5 column are what you will find exactly in the html codes and we simply fill in,
+the columns after, are additional data, which we will add and input those
+
+<label for="name" class="form-label">模板名称(Template Name)</label>
+<input type="text" class="form-control" id="name" name="name" value="" required="">
+this is where to enter the template name;
+
+<label for="title" class="form-label">标题(Title)</label>
+<input type="text" class="form-control" id="title" name="title" value="" required="">
+this is where to enter the title;
+
+<label for="text" class="form-label">消息内容(Message)</label>
+<textarea class="form-control" id="text" name="text" rows="2" required=""></textarea>
+this is where to enter the msg;
+
+<label for="image_html" class="form-label">图片(Image URL) (可选)</label>
+<input type="url" class="form-control" id="image-url" name="image-url" value="" data-listener-added_2930770f="true">
+this is where to enter the img url;
+
+<button type="button" class="add-field-btn" id="add-payload-field">+ 添加</button>
+click this to add a new additional data
+
+<div class="col-4">
+                            <input type="text" class="form-control" name="payload_key_0" placeholder="键" value="" required="" data-listener-added_2930770f="true">
+                        </div>
+<input type="text" class="form-control" name="payload_key_0" placeholder="键" value="" required="" data-listener-added_2930770f="true">
+after adding a new data, this is where you enter bg1
+
+<div class="col-6">
+                            <input type="text" class="form-control" name="payload_value_0" placeholder="值" value="" required="">
+                        </div>
+<input type="text" class="form-control" name="payload_value_0" placeholder="值" value="" required="">
+this is where you enter the value of the bg1
+
+after that add another additional data and do the bg2, track and only bg
+
+now something to know, the msg, title, will include, non english characters, including spainish and german, the temp name will include chinese charcters,
+the urls, whether its the url from Imgae Url or bg1 bg2 url they will be something like s3://dragon-business-res/ESpush/Auto/lobbybonuspreview.jpg
+however when you input them
+we should replace s3://dragon-business-res' to 'https://d1i7uj8b98if3u.cloudfront.net'
+
+
+<button type="submit" class="btn btn-primary" onclick="return submit_confirm()">保存模板</button>
+after all that, click this to save the temp
+
+after its success and completed, the site takes you to <a href="/job/push_template" class="nav-link text-white active" aria-current="page">
+                    <svg class="bi pe-none me-2" width="16" height="16">
+                        <use href="#grid"></use>
+                    </svg>
+                    推送模板
+                </a>
+here, the code is the button, this is the url  http://54.184.236.96/job/push_template
+where you should be able to see the newly added templates,
+
+the streamlit app should also have 2 buttons, 1 is export payload, 
+the payload its just a json file of the template, and it looks like this  {"bg1": "https://d1i7uj8b98if3u.cloudfront.net/ESpush/Auto/wheelbonusbanner.jpg", "bg2": "https://d1i7uj8b98if3u.cloudfront.net/ESpush/Auto/wheelbonuspreview.jpg", "track": "Triggerwheelbonusspanish", "onlybg": "1", "title": "🏆 ¡BONUS DE RULETA LISTO!", "body": "💸 Es tu turno, {{name | default:'spinner'}}, de girar. ⚡ ¡Impulsa ⚡ tu saldo con UNA VICTORIA FÁCIL! 🏆", "bigImage": "https://d1i7uj8b98if3u.cloudfront.net/ESpush/Auto/wheelbonuspreview.jpg", "sound": "n3.wav"}
+you then will export the file in a excel, with column A as the template name, and coumn B with all the json/payload
+and the other button is export number/ID of the template, with column A as the template name, and column B is the ID
+you can find the ID here in 
+<div class="card-header">
+                                681: T: ES: Wheel Bonus
+                            </div>
+681 in this case is the ID and the ones followed by the first colon is the temp name
+now i have already created the folder on the pc, lets do it
